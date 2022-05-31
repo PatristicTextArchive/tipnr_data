@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# In[ ]:
+
+
 import os,sys,glob,re,string,unicodedata
 import csv,json,jsonlines
 import requests
@@ -11,6 +14,9 @@ from xml.dom.minidom import parseString
 
 
 # ## Functions
+
+# In[ ]:
+
 
 # read file https://raw.githubusercontent.com/STEPBible/STEPBible-Data/master/TIPNR%20-%20Translators%20Individualised%20Proper%20Names%20with%20all%20References%20-%20STEPBible.org%20CC%20BY.txt
 def load_tipnr_data():
@@ -29,18 +35,24 @@ def load_tipnr_data():
     return contents
 
 
+# In[ ]:
+
+
 def load_openbibleinfo_data():
     '''Load Bible-Geocoding-Data (ancient.jsonl) data from https://github.com/openbibleinfo/Bible-Geocoding-Data/raw/main/data/ancient.jsonl if it does not exist yet'''
-    if os.path.isfile('/home/stockhausen/Dokumente/projekte/openbibleinfo.jsonl'):
-        contents = open('/home/stockhausen/Dokumente/projekte/openbibleinfo.jsonl', "r").read() 
+    if os.path.isfile('/home/stockhausen/Dokumente/projekte/tipnr_data/openbibleinfo.jsonl'):
+        contents = open('/home/stockhausen/Dokumente/projekte/tipnr_data/openbibleinfo.jsonl', "r").read() 
     else:
         url = 'https://github.com/openbibleinfo/Bible-Geocoding-Data/raw/main/data/ancient.jsonl'
         r = requests.get(url, allow_redirects=True)
-        with open("/home/stockhausen/Dokumente/projekte/openbibleinfo.jsonl", 'wb') as openbibleinfo:
+        with open("/home/stockhausen/Dokumente/projekte/tipnr_data/openbibleinfo.jsonl", 'wb') as openbibleinfo:
             openbibleinfo.write(r.content)
-        contents = open('/home/stockhausen/Dokumente/projekte/openbibleinfo.jsonl', "r").read() 
+        contents = open('/home/stockhausen/Dokumente/projekte/tipnr_data/openbibleinfo.jsonl', "r").read() 
     data = [json.loads(str(item)) for item in contents.strip().split('\n')]
     return data
+
+
+# In[ ]:
 
 
 def convert_openbibleinfo():
@@ -60,11 +72,14 @@ def convert_openbibleinfo():
                 elif key == "s3b25cf":
                     openbibleplace["tipnr"] = value.get("id").replace("@","_")
                 elif key == "s7cc8b2":
-                    openbibleplace["wikidata"] = value.get("id")
+                    openbibleplace["wikidata"] = "http://www.wikidata.org/entity/"+value.get("id")
         except:
             pass
         list_of_openbibleplaces.append(openbibleplace)
     return list_of_openbibleplaces
+
+
+# In[ ]:
 
 
 def convert_persons_dict():
@@ -75,7 +90,7 @@ def convert_persons_dict():
     contents = contents.replace("<br>","") # remove "<br>"
     contents = contents.replace(">","") # remove ">"
     # getting the relevant parts of the file
-    part = contents.split("\n#\t\t\t\t\t\t\t\t\n#==========================================================================================================\t\t\t\t\t\t\t\t\n#PLACE") # split after last person entry
+    part = contents.split("\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\n==========================================================================================================\t\t\t\t\t\t\t\t\nPLACE") # split after last person entry
     entries = part[0].split("$========== PERSON(s)\t\t\t\t\t\t\t\t\n")[2:] # split by person, remove everything before first entry
     list_of_persons = []
     # conversion
@@ -120,6 +135,9 @@ def convert_persons_dict():
             biblical_person["subrecord"] = subrecord
         list_of_persons.append(biblical_person)
     return list_of_persons
+
+
+# In[ ]:
 
 
 def convert_places_dict():
@@ -171,10 +189,13 @@ def convert_places_dict():
     return list_of_places
 
 
+# In[ ]:
+
+
 def enrich_places_data():
-    '''Enrich tipnr data with openbible pleiades links'''
     openbible = convert_openbibleinfo()
     tipnr = convert_places_dict()
+    '''Enrich tipnr data with openbible pleiades links'''
     enriched_data = []
     for result in tipnr:
         enriched = {}
@@ -182,11 +203,16 @@ def enrich_places_data():
             place = next(item for item in openbible if item["tipnr"] == result["unique_name"])
             enriched = result
             enriched["pleiades"] = place["pleiades"]
+            enriched["wikidata"] = place["wikidata"]
         except:
             enriched = result
             enriched["pleiades"] = ""
+            enriched["wikidata"] = ""
         enriched_data.append(enriched)
     return enriched_data
+
+
+# In[ ]:
 
 
 def convert_others_dict():
@@ -242,12 +268,23 @@ def convert_others_dict():
 # 
 # containing PERSON(s) and OTHER categories
 
+# In[ ]:
+
+
 tipnr_persons = convert_persons_dict()+convert_others_dict()
+
+
+# In[ ]:
+
 
 # Write places according to text to file
 with open('/home/stockhausen/Dokumente/projekte/tipnr_data/tipnr_persons.json', 'w') as fout:
 # Ergebnisse werden in eine json-Datei geschrieben
     json.dump(tipnr_persons, fout, indent=4, ensure_ascii=False)
+
+
+# In[ ]:
+
 
 # convert json2 xml
 xml = dicttoxml(tipnr_persons, attr_type=False)
@@ -258,16 +295,30 @@ with open("/home/stockhausen/Dokumente/projekte/tipnr_data/tipnr_persons.xml", '
 
 # ### Places
 
+# In[ ]:
+
+
 tipnr_places = enrich_places_data()
+
+
+# In[ ]:
+
 
 # Write places according to text to file
 with open('/home/stockhausen/Dokumente/projekte/tipnr_data/tipnr_places.json', 'w') as fout:
 # Ergebnisse werden in eine json-Datei geschrieben
     json.dump(tipnr_places, fout, indent=4, ensure_ascii=False)
 
+
+# In[ ]:
+
+
 # convert json2 xml
 xml = dicttoxml(tipnr_places, attr_type=False)
 dom = parseString(xml)
 with open("/home/stockhausen/Dokumente/projekte/tipnr_data/tipnr_places.xml", 'w') as file_open:
     file_open.write(dom.toprettyxml())
+
+
+
 
