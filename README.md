@@ -1,6 +1,6 @@
-This data is converted from https://github.com/STEPBible/STEPBible-Data/blob/master/TIPNR%20-%20Translators%20Individualised%20Proper%20Names%20with%20all%20References%20-%20STEPBible.org%20CC%20BY.txt (at commit https://github.com/STEPBible/STEPBible-Data/commit/9cb030677a1e2a19614d5abc8fc74363938f5150) to json and xml for use in the Patristic Text Archive (PTA).
+This data is converted from https://github.com/STEPBible/STEPBible-Data/blob/master/TIPNR%20-%20Translators%20Individualised%20Proper%20Names%20with%20all%20References%20-%20STEPBible.org%20CC%20BY.txt (at [commit b83a3cf1 (31 May 2024)](https://github.com/STEPBible/STEPBible-Data/commit/b83a3cf1224af5cf72606d86d6be1789adc69541)) to json and xml for use in the Patristic Text Archive (PTA).
 
-Unique Names (which ere used as IDs in PTA) are adapted to NCName specifications: therefore @ is replaced by _.
+Unique Names (which were used as IDs in PTA) are adapted to NCName specifications: therefore @ is replaced by _.
 
 Places data is enriched (using https://github.com/openbibleinfo/Bible-Geocoding-Data/blob/main/data/ancient.jsonl) with Pleiades-IDs where existent.
 
