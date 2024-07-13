@@ -68,12 +68,25 @@ def convert_openbibleinfo():
     return list_of_openbibleplaces
 
 # %%
+def get_unique_name(entry):
+    suffix = entry.split("@")[1]
+    if "-" in suffix:
+        suffix = suffix.split("-")[0]
+    elif "=" in suffix:
+        suffix = suffix.split("=")[0]
+    else:
+        pass
+    name = entry.split("@")[0]
+    unique_name = "_".join([name,suffix])
+    return unique_name
+
+# %%
 def convert_persons_dict():
     contents = load_tipnr_data()
     # getting the relevant parts of the file
     part = "".join(contents.readlines()[114:13380]) # line number start and end -1
     # some data cleaning
-    part = part.replace("@","_") # remove @ from IDs and replace with _
+    #part = part.replace("@","_") # remove @ from IDs and replace with _
     part = part.replace("#","") # remove "#"
     part = part.replace("<br>","") # remove "<br>"
     part = part.replace(">","") # remove ">"
@@ -90,31 +103,28 @@ def convert_persons_dict():
                 # if main record
                 line = line.split("\t")
                 biblical_person = {}
-                try:
-                    biblical_person["unique_name"] = line[0].split("=")[0].split("-")[0]
-                except:
-                    biblical_person["unique_name"] = line[0].split("=")[0]
+                biblical_person["unique_name"] = get_unique_name(line[0])
                 biblical_person["uStrong"] = line[0].split("=")[1]
                 #biblical_person["short_description"] = line[1]
                 #biblical_person["ext_description"] = line[7]
                 try:
-                    biblical_person["father"] = line[2].split(" + ")[0].split("-")[0]
+                    biblical_person["father"] = get_unique_name(line[2].split(" + ")[0])
                 except:
-                    biblical_person["father"] = line[2].split(" + ")[0]
+                    biblical_person["father"] = ""
                 try:
-                    biblical_person["mother"] = line[2].split(" + ")[1].split("-")[0]
+                    biblical_person["mother"] = get_unique_name(line[2].split(" + ")[1])
                 except:
-                    biblical_person["mother"] = line[2].split(" + ")[1]
+                    biblical_person["mother"] = ""
                 try:
-                    biblical_person["siblings"] = [x.split("-")[0] for x in line[3].split(", ")]
+                    biblical_person["siblings"] = [get_unique_name(x) for x in line[3].split(", ")]
                 except:
                     biblical_person["siblings"] = line[3].split(", ")
                 try:
-                    biblical_person["partners"] = [x.split("-")[0] for x in line[4].split(", ")]
+                    biblical_person["partners"] = [get_unique_name(x) for x in line[4].split(", ")]
                 except:
                     biblical_person["partners"] = line[4].split(", ")
                 try:
-                    biblical_person["offspring"] = [x.split("-")[0] for x in line[5].split(", ")]
+                    biblical_person["offspring"] = [get_unique_name(x) for x in line[5].split(", ")]
                 except:
                     biblical_person["offspring"] = line[5].split(", ")
                 biblical_person["tribe"] = line[6]
@@ -123,10 +133,7 @@ def convert_persons_dict():
                 # if sub_record
                 line = line.split("\t")
                 this_record = {}
-                try:
-                    this_record["unique_tag"] = line[1].split("=")[0].split("-")[0]
-                except:
-                    this_record["unique_tag"] = line[1].split("=")[0]
+                this_record["unique_tag"] = get_unique_name(line[1])
                 if "=" in line[2]:
                     strongs = line[2].split("=")[0].split("«")
                     origname = line[2].split("=")[1]
@@ -146,8 +153,8 @@ def convert_persons_dict():
                 biblical_person["subrecord"] = subrecord
             elif clean.index(line) > 0 and clean.index(line) < len(clean)-1:
                 line = line.split("\t")
-                biblical_person["short_description"] = line[6].split("_Short= ")[1]
-                biblical_person["ext_description"] = line[7].split("_Article= ")[1]
+                biblical_person["short_description"] = line[6].split("@Short= ")[1]
+                biblical_person["ext_description"] = line[7].split("@Article= ")[1]
         list_of_persons.append(biblical_person)
     return list_of_persons
 
@@ -157,8 +164,8 @@ def convert_places_dict():
     # getting the relevant parts of the file
     part = "".join(contents.readlines()[13380:18071]) # line number start and end -1
     # some data cleaning
-    part = part.replace("_","-") # reserve _ for ID separator only
-    part = part.replace("@","_") # remove @ from IDs and replace with _
+    #part = part.replace("_","-") # reserve _ for ID separator only
+    #part = part.replace("@","_") # remove @ from IDs and replace with _
     entries = part.split("$========== PLACE\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\n")[1:] # split by place, remove everything before first entry
     list_of_places = []
     # conversion
@@ -172,28 +179,28 @@ def convert_places_dict():
                 # if main record
                 line = line.split("\t")
                 biblical_place = {}
-                name = line[0].split("_")[0]
-                try:
-                    ref = line[0].split("_")[1].split("=")[0].split("-")[0]
-                except:
-                    ref = line[0].split("_")[1].split("=")[0]
-                biblical_place["unique_name"] = "_".join([name,ref])
+                biblical_place["unique_name"] = get_unique_name(line[0])
                 biblical_place["uStrong"] = line[0].split("=")[1]
-                biblical_place["openbible_name"] = line[1]
+                # clean openbible name
+                openbible_ref = line[1]
+                if "= " in openbible_ref:
+                    openbible_ref = openbible_ref.split("= ")
+                    name = openbible_ref[0]
+                    identification = openbible_ref[1].split(" (")[0]
+                    openbible_ref = name+" ("+identification+")"
+                else:
+                    pass
+                # replace _ with " "
+                biblical_place["openbible_name"] = openbible_ref.replace("_"," ")
                 try:
-                    biblical_place["lonlat"] = line[5].split("_")[1]
+                    biblical_place["lonlat"] = line[5].split("@")[1]
                 except:
                     biblical_place["lonlat"] = ""
             elif clean.index(line) > 0 and clean.index(line) < len(clean)-2:
                 # if sub_record
                 line = line.split("\t")
                 this_record = {}
-                name = line[1].split("_")[0]
-                try:
-                    ref = line[1].split("_")[1].split("=")[0].split("-")[0]
-                except:
-                    ref = line[1].split("_")[1].split("=")[0]
-                this_record["unique_tag"] = "_".join([name,ref])
+                this_record["unique_tag"] = get_unique_name(line[1])
                 if "=" in line[2]:
                     strongs = line[2].split("=")[0].split("«")
                     origname = line[2].split("=")[1]
@@ -213,8 +220,8 @@ def convert_places_dict():
                 biblical_place["subrecord"] = subrecord
             elif clean.index(line) > 0 and clean.index(line) < len(clean)-1:
                 line = line.split("\t")
-                biblical_place["short_description"] = line[6].split("_Short= ")[1]
-                biblical_place["ext_description"] = line[7].split("_Article= ")[1]
+                biblical_place["short_description"] = line[6].split("@Short= ")[1]
+                biblical_place["ext_description"] = line[7].split("@Article= ")[1]
         list_of_places.append(biblical_place)
     return list_of_places
 
@@ -244,7 +251,7 @@ def convert_others_dict():
     # getting the relevant parts of the file
     part = "".join(contents.readlines()[18071:18629]) # line number start and end -1
     # some data cleaning
-    part = part.replace("@","_") # remove @ from IDs and replace with _
+    #part = part.replace("@","_") # remove @ from IDs and replace with _
     part = part.replace("#","") # remove "#"
     part = part.replace("<br>","") # remove "<br>"
     part = part.replace(">","") # remove ">"
@@ -261,20 +268,14 @@ def convert_others_dict():
                 # if main record
                 line = line.split("\t")
                 biblical_person = {}
-                try:
-                    biblical_person["unique_name"] = line[0].split("=")[0].split("-")[0]
-                except:
-                    biblical_person["unique_name"] = line[0].split("=")[0]
+                biblical_person["unique_name"] = get_unique_name(line[0])
                 biblical_person["uStrong"] = line[0].split("=")[1]
                 #biblical_person["ext_description"] = line[1]
             elif clean.index(line) > 0 and clean.index(line) < len(clean)-2:
                 # if sub_record
                 line = line.split("\t")
                 this_record = {}
-                try:
-                    this_record["unique_tag"] = line[1].split("=")[0].split("-")[0]
-                except:
-                    this_record["unique_tag"] = line[1].split("=")[0]
+                this_record["unique_tag"] = get_unique_name(line[1])
                 if "=" in line[2]:
                     strongs = line[2].split("=")[0].split("«")
                     origname = line[2].split("=")[1]
@@ -291,8 +292,8 @@ def convert_others_dict():
                 biblical_person["subrecord"] = subrecord
             elif clean.index(line) > 0 and clean.index(line) < len(clean)-1:
                 line = line.split("\t")
-                biblical_person["short_description"] = line[6].split("_Short= ")[1]
-                biblical_person["ext_description"] = line[7].split("_Article= ")[1]
+                biblical_person["short_description"] = line[6].split("@Short= ")[1]
+                biblical_person["ext_description"] = line[7].split("@Article= ")[1]
         list_of_persons.append(biblical_person)
     return list_of_persons
 
@@ -338,3 +339,4 @@ xml = dicttoxml(tipnr_places, attr_type=False)
 dom = parseString(xml)
 with open("/home/stockhausen/Dokumente/projekte/tipnr_data/tipnr_places.xml", 'w') as file_open:
     file_open.write(dom.toprettyxml())
+
